@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>FakeScope — AI Review Detector</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.8.0/dist/tabler-icons.min.css"/>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0c0c0f;
+    --bg2: #13131a;
+    --bg3: #1a1a24;
+    --surface: #1f1f2e;
+    --surface2: #26263a;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.13);
+    --text: #f0eeff;
+    --text2: #9896b8;
+    --text3: #5c5a7e;
+    --accent: #7c6ef5;
+    --accent2: #a898ff;
+    --red: #f06060;
+    --red-bg: rgba(240,96,96,0.1);
+    --amber: #f0a040;
+    --amber-bg: rgba(240,160,64,0.1);
+    --green: #4ecb8a;
+    --green-bg: rgba(78,203,138,0.1);
+    --radius: 14px;
+    --radius-sm: 8px;
+    --radius-pill: 999px;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* GRID BG */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(124,110,245,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(124,110,245,0.04) 1px, transparent 1px);
+    background-size: 48px 48px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* GLOW ORBS */
+  body::after {
+    content: '';
+    position: fixed;
+    width: 600px; height: 600px;
+    background: radial-gradient(circle, rgba(124,110,245,0.08) 0%, transparent 70%);
+    top: -150px; left: -150px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .orb2 {
+    position: fixed;
+    width: 400px; height: 400px;
+    background: radial-gradient(circle, rgba(78,203,138,0.05) 0%, transparent 70%);
+    bottom: -100px; right: -100px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  main {
+    position: relative;
+    z-index: 1;
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 48px 24px 80px;
+  }
+
+  /* HEADER */
+  header { text-align: center; margin-bottom: 52px; animation: fadeUp 0.6s ease both; }
+  .logo-chip {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: var(--surface); border: 1px solid var(--border2);
+    border-radius: var(--radius-pill); padding: 6px 16px 6px 10px;
+    font-size: 13px; font-weight: 500; color: var(--accent2);
+    margin-bottom: 24px;
+  }
+  .logo-chip-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); animation: pulse 2s infinite; }
+  h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(2.4rem, 5vw, 3.6rem);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+    margin-bottom: 16px;
+  }
+  h1 span { color: var(--accent2); }
+  header p { font-size: 17px; color: var(--text2); font-weight: 300; max-width: 500px; margin: 0 auto; line-height: 1.6; }
+
+  /* TABS */
+  .tabs {
+    display: flex; gap: 4px;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 5px;
+    margin-bottom: 28px;
+    animation: fadeUp 0.6s 0.1s ease both;
+  }
+  .tab {
+    flex: 1; padding: 10px 16px;
+    border: none; background: transparent;
+    color: var(--text2); font-size: 14px; font-weight: 500;
+    border-radius: 10px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    transition: all 0.2s;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .tab.active { background: var(--surface2); color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
+  .tab:hover:not(.active) { color: var(--text); }
+
+  /* PANELS */
+  .panel { display: none; animation: fadeUp 0.35s ease both; }
+  .panel.active { display: block; }
+
+  /* CARD */
+  .card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 28px;
+    margin-bottom: 20px;
+    animation: fadeUp 0.5s 0.15s ease both;
+  }
+  .card-label { font-size: 12px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text3); margin-bottom: 12px; }
+
+  textarea {
+    width: 100%; min-height: 150px; resize: vertical;
+    background: var(--surface); border: 1px solid var(--border2);
+    border-radius: var(--radius-sm); color: var(--text);
+    font-family: 'DM Sans', sans-serif; font-size: 15px;
+    padding: 14px 16px; line-height: 1.6;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(124,110,245,0.15); }
+  textarea::placeholder { color: var(--text3); }
+
+  /* SAMPLES */
+  .samples { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+  .sample-chip {
+    cursor: pointer; font-size: 12px; font-weight: 500;
+    padding: 5px 12px; border-radius: var(--radius-pill);
+    border: 1px solid var(--border2); background: transparent;
+    color: var(--text2); font-family: 'DM Sans', sans-serif;
+    transition: all 0.2s;
+  }
+  .sample-chip:hover { background: var(--surface2); color: var(--text); border-color: var(--accent); }
+
+  /* IMAGE UPLOAD */
+  .upload-zone {
+    border: 2px dashed var(--border2);
+    border-radius: var(--radius);
+    padding: 48px 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.25s;
+    background: var(--surface);
+    position: relative;
+  }
+  .upload-zone:hover, .upload-zone.drag-over {
+    border-color: var(--accent);
+    background: rgba(124,110,245,0.06);
+  }
+  .upload-zone input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; }
+  .upload-icon { font-size: 36px; color: var(--accent); margin-bottom: 12px; display: block; }
+  .upload-zone h3 { font-family: 'Syne', sans-serif; font-size: 17px; font-weight: 700; margin-bottom: 6px; }
+  .upload-zone p { font-size: 13px; color: var(--text2); }
+
+  .image-preview-wrap {
+    position: relative; display: inline-block; margin-top: 16px;
+  }
+  .image-preview-wrap img {
+    max-width: 100%; max-height: 320px; border-radius: var(--radius-sm);
+    border: 1px solid var(--border2); display: block;
+  }
+  .remove-img {
+    position: absolute; top: -10px; right: -10px;
+    width: 26px; height: 26px; border-radius: 50%;
+    background: var(--red); color: #fff; border: none;
+    cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center;
+  }
+
+  /* BTN */
+  .btn-primary {
+    width: 100%; padding: 14px; border-radius: var(--radius-sm);
+    background: linear-gradient(135deg, var(--accent) 0%, #9b8cf9 100%);
+    color: #fff; border: none; font-size: 15px; font-weight: 600;
+    cursor: pointer; font-family: 'Syne', sans-serif; letter-spacing: 0.01em;
+    transition: opacity 0.2s, transform 0.15s;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .btn-primary:hover:not(:disabled) { opacity: 0.9; }
+  .btn-primary:active:not(:disabled) { transform: scale(0.99); }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* LOADING */
+  .loading-wrap { text-align: center; padding: 52px 0; }
+  .spinner {
+    width: 48px; height: 48px; border-radius: 50%;
+    border: 3px solid var(--border2);
+    border-top-color: var(--accent);
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 20px;
+  }
+  .loading-wrap p { font-size: 15px; color: var(--text2); }
+
+  /* RESULT */
+  .result-grid { display: grid; grid-template-columns: 200px 1fr; gap: 20px; align-items: start; margin-bottom: 20px; }
+  @media(max-width: 600px) { .result-grid { grid-template-columns: 1fr; } }
+
+  .score-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 24px 16px;
+    text-align: center;
+  }
+  .score-ring-label { font-size: 12px; color: var(--text3); margin-top: 10px; text-transform: uppercase; letter-spacing: 0.06em; }
+
+  .verdict-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 20px;
+  }
+  .verdict-badge {
+    display: inline-block; font-size: 13px; font-weight: 600;
+    padding: 5px 14px; border-radius: var(--radius-pill); margin-bottom: 12px;
+    font-family: 'Syne', sans-serif;
+  }
+  .verdict-summary { font-size: 14px; line-height: 1.7; color: var(--text2); margin-bottom: 16px; }
+
+  .meter-label { display: flex; justify-content: space-between; font-size: 12px; color: var(--text3); margin-bottom: 4px; }
+  .meter-bar { height: 5px; border-radius: 3px; background: var(--surface2); margin-bottom: 10px; overflow: hidden; }
+  .meter-fill { height: 100%; border-radius: 3px; transition: width 0.8s cubic-bezier(.16,1,.3,1); }
+
+  .signals-card {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: var(--radius); overflow: hidden; margin-bottom: 20px;
+  }
+  .signals-header {
+    padding: 12px 18px; border-bottom: 1px solid var(--border);
+    background: var(--surface); font-size: 13px; font-weight: 600; color: var(--text2);
+    font-family: 'Syne', sans-serif; text-transform: uppercase; letter-spacing: 0.06em;
+  }
+  .signal-row {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 13px 18px; border-bottom: 1px solid var(--border);
+  }
+  .signal-row:last-child { border-bottom: none; }
+  .sig-icon {
+    width: 30px; height: 30px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; flex-shrink: 0; margin-top: 1px;
+  }
+  .sig-red { background: var(--red-bg); color: var(--red); }
+  .sig-green { background: var(--green-bg); color: var(--green); }
+  .sig-amber { background: var(--amber-bg); color: var(--amber); }
+  .signal-name { font-size: 14px; font-weight: 500; }
+  .signal-desc { font-size: 13px; color: var(--text2); margin-top: 2px; }
+  .sig-pill {
+    font-size: 11px; font-weight: 600; padding: 3px 10px;
+    border-radius: var(--radius-pill); flex-shrink: 0; margin-left: auto;
+    text-transform: uppercase; letter-spacing: 0.06em;
+  }
+  .pill-red { background: var(--red-bg); color: var(--red); }
+  .pill-green { background: var(--green-bg); color: var(--green); }
+  .pill-amber { background: var(--amber-bg); color: var(--amber); }
+
+  .highlight-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 18px 20px;
+  }
+  .highlight-card p { font-size: 14px; line-height: 1.8; color: var(--text2); }
+  .hl-suspicious { background: rgba(240,96,96,0.15); color: var(--red); border-radius: 3px; padding: 1px 3px; }
+
+  .error-box {
+    background: var(--red-bg); border: 1px solid rgba(240,96,96,0.25);
+    border-radius: var(--radius-sm); padding: 12px 16px;
+    color: var(--red); font-size: 14px; margin-top: 12px; display: none;
+  }
+
+  /* IMAGE ANALYSIS EXTRAS */
+  .img-meta { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+  .img-tag {
+    font-size: 12px; padding: 4px 10px; border-radius: var(--radius-pill);
+    background: var(--surface2); color: var(--text2); border: 1px solid var(--border);
+  }
+
+  /* ANIMATIONS */
+  @keyframes fadeUp { from { opacity:0; transform:translateY(18px); } to { opacity:1; transform:translateY(0); } }
+  @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.4;} }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* SVG ring */
+  .ring-svg { display: block; margin: 0 auto; }
+</style>
+</head>
+<body>
+<div class="orb2"></div>
+<main>
+  <header>
+    <div class="logo-chip">
+      <span class="logo-chip-dot"></span>
+      Powered by Claude AI
+    </div>
+    <h1>Fake<span>Scope</span></h1>
+    <p>AI-powered review authenticity detection — analyze text or screenshot images in seconds.</p>
+  </header>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('text', this)">
+      <i class="ti ti-text-size"></i> Text Review
+    </button>
+    <button class="tab" onclick="switchTab('image', this)">
+      <i class="ti ti-photo"></i> Review Screenshot
+    </button>
+  </div>
+
+  <!-- TEXT PANEL -->
+  <div class="panel active" id="panel-text">
+    <div class="card">
+      <p class="card-label">Paste the review text</p>
+      <textarea id="review-input" placeholder="e.g. AMAZING product!! Best I ever bought!! 5 stars!!! Everyone should buy this NOW!!!"></textarea>
+      <div class="samples">
+        <span style="font-size:12px; color:var(--text3); align-self:center;">Try a sample:</span>
+        <button class="sample-chip" onclick="loadSample('fake1')">🚩 Fake #1</button>
+        <button class="sample-chip" onclick="loadSample('fake2')">🚩 Fake #2</button>
+        <button class="sample-chip" onclick="loadSample('real1')">✅ Real #1</button>
+        <button class="sample-chip" onclick="loadSample('real2')">✅ Real #2</button>
+      </div>
+    </div>
+    <button class="btn-primary" id="analyze-text-btn" onclick="analyzeText()">
+      <i class="ti ti-search"></i> Analyze Review
+    </button>
+    <div class="error-box" id="text-error"></div>
+  </div>
+
+  <!-- IMAGE PANEL -->
+  <div class="panel" id="panel-image">
+    <div class="card">
+      <p class="card-label">Upload a review screenshot</p>
+      <div class="upload-zone" id="drop-zone">
+        <input type="file" id="img-input" accept="image/*" onchange="handleImageSelect(event)"/>
+        <i class="ti ti-cloud-upload upload-icon"></i>
+        <h3>Drop screenshot here</h3>
+        <p>or click to browse — PNG, JPG, WEBP supported</p>
+      </div>
+      <div id="img-preview-wrap" style="margin-top:16px; display:none; text-align:center;">
+        <div class="image-preview-wrap">
+          <img id="img-preview" src="" alt="Review screenshot preview"/>
+          <button class="remove-img" onclick="removeImage()" title="Remove image">
+            <i class="ti ti-x"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+    <button class="btn-primary" id="analyze-img-btn" onclick="analyzeImage()" disabled>
+      <i class="ti ti-photo-scan"></i> Analyze Screenshot
+    </button>
+    <div class="error-box" id="img-error"></div>
+  </div>
+
+  <!-- RESULTS (shared) -->
+  <div id="loading-section" style="display:none;">
+    <div class="loading-wrap">
+      <div class="spinner"></div>
+      <p id="loading-msg">Scanning for deception signals...</p>
+    </div>
+  </div>
+
+  <div id="result-section" style="display:none; margin-top:24px; animation: fadeUp 0.5s ease both;">
+    <div class="result-grid">
+      <div class="score-card">
+        <svg class="ring-svg" width="120" height="120" viewBox="0 0 120 120">
+          <circle cx="60" cy="60" r="48" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="10"/>
+          <circle id="score-arc" cx="60" cy="60" r="48" fill="none" stroke="#7c6ef5" stroke-width="10"
+            stroke-linecap="round" stroke-dasharray="301.6" stroke-dashoffset="301.6"
+            transform="rotate(-90 60 60)" style="transition: stroke-dashoffset 1s cubic-bezier(.16,1,.3,1), stroke 0.4s;"/>
+          <text id="score-text" x="60" y="67" text-anchor="middle" font-size="26" font-weight="700" fill="#f0eeff" font-family="Syne, sans-serif">0%</text>
+        </svg>
+        <p class="score-ring-label">fake probability</p>
+      </div>
+      <div class="verdict-card">
+        <span id="verdict-badge" class="verdict-badge"></span>
+        <p id="confidence-label" style="font-size:12px; color:var(--text3); margin-bottom:10px;"></p>
+        <p id="verdict-summary" class="verdict-summary"></p>
+        <div id="meter-bars"></div>
+      </div>
+    </div>
+
+    <div class="signals-card">
+      <div class="signals-header">Signal Analysis</div>
+      <div id="signals-list"></div>
+    </div>
+
+    <div id="highlight-section" style="display:none;" class="highlight-card">
+      <p class="card-label" style="margin-bottom:8px;">Highlighted Review Text</p>
+      <p id="review-highlight-text"></p>
+    </div>
+
+    <div id="img-analysis-extra" style="display:none; margin-top:16px;" class="highlight-card">
+      <p class="card-label" style="margin-bottom:10px;">Image Analysis Notes</p>
+      <div class="img-meta" id="img-tags"></div>
+      <p id="img-notes-text" style="font-size:14px; color:var(--text2); line-height:1.7;"></p>
+    </div>
+
+    <div style="text-align:center; margin-top:24px;">
+      <button class="sample-chip" onclick="resetAll()" style="padding:10px 24px; font-size:14px;">
+        <i class="ti ti-refresh" style="margin-right:6px; vertical-align:-1px;"></i>Analyze Another
+      </button>
+    </div>
+  </div>
+</main>
+
+<script>
+const SAMPLES = {
+  fake1: "OMG this product is ABSOLUTELY AMAZING!!! I cannot believe how incredible this is!!! Best purchase of my ENTIRE life without a doubt!!! 5 stars is not enough I would give 100 stars if I could!!! Every single person on earth NEEDS to buy this RIGHT NOW!!! The seller is the best seller I have ever seen in my life!!! FAST SHIPPING and PERFECT QUALITY!!! BUY BUY BUY!!!",
+  fake2: "I was skeptical at first but WOW this changed my life completely!!! My skin is GLOWING now, I lost 15 pounds in one week, and my energy is through the roof! All my friends keep asking me what my secret is!!! I have tried every product on the market and NOTHING compares to this!!! The company is amazing, customer service is 10/10!!! Do not hesitate to buy this!!!",
+  real1: "I bought this coffee maker about 3 months ago and it's been pretty decent. The brewing is fast — about 6 minutes for a full pot — and the carafe keeps coffee warm for a couple hours without burning it. The buttons feel a bit stiff at first but loosen up with use. My only complaint is the water reservoir is hard to see through, so I've accidentally underfilled it twice. Overall good value for the price.",
+  real2: "Mixed feelings about this backpack. The quality of the zippers and stitching is genuinely excellent — feels very durable. The laptop compartment fits my 15-inch MacBook perfectly with room to spare. However, the chest strap placement is a little awkward for shorter torsos and the hip padding could be thicker for longer hikes. For city commuting it's great, for multi-day hiking I'd want something different. Bought it for £89 on sale which felt fair."
+};
+
+let currentTab = 'text';
+let selectedImageBase64 = null;
+let selectedImageType = null;
+
+function switchTab(tab, el) {
+  currentTab = tab;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-' + tab).classList.add('active');
+  resetResults();
+}
+
+function loadSample(key) {
+  document.getElementById('review-input').value = SAMPLES[key];
+}
+
+function handleImageSelect(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  processImageFile(file);
+}
+
+function processImageFile(file) {
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    const dataUrl = ev.target.result;
+    const parts = dataUrl.split(',');
+    selectedImageBase64 = parts[1];
+    selectedImageType = file.type || 'image/jpeg';
+    document.getElementById('img-preview').src = dataUrl;
+    document.getElementById('img-preview-wrap').style.display = 'block';
+    document.getElementById('analyze-img-btn').disabled = false;
+  };
+  reader.readAsDataURL(file);
+}
+
+function removeImage() {
+  selectedImageBase64 = null;
+  selectedImageType = null;
+  document.getElementById('img-preview-wrap').style.display = 'none';
+  document.getElementById('img-preview').src = '';
+  document.getElementById('img-input').value = '';
+  document.getElementById('analyze-img-btn').disabled = true;
+}
+
+// Drag and drop
+const dz = document.getElementById('drop-zone');
+dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag-over'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
+dz.addEventListener('drop', e => {
+  e.preventDefault(); dz.classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file && file.type.startsWith('image/')) processImageFile(file);
+});
+
+const LOADING_MSGS = [
+  "Scanning for deception signals...",
+  "Analyzing linguistic authenticity...",
+  "Checking suspicious superlatives...",
+  "Cross-referencing ML patterns...",
+  "Running sentiment forensics...",
+  "Detecting astroturfing indicators..."
+];
+
+function showError(id, msg) {
+  const el = document.getElementById(id);
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+function hideErrors() {
+  document.querySelectorAll('.error-box').forEach(e => { e.style.display = 'none'; e.textContent = ''; });
+}
+
+function resetResults() {
+  document.getElementById('result-section').style.display = 'none';
+  document.getElementById('loading-section').style.display = 'none';
+}
+
+function resetAll() {
+  resetResults();
+  document.getElementById('review-input').value = '';
+  removeImage();
+  hideErrors();
+}
+
+async function analyzeText() {
+  hideErrors();
+  const review = document.getElementById('review-input').value.trim();
+  if (!review || review.length < 20) { showError('text-error', 'Please enter at least 20 characters.'); return; }
+  const btn = document.getElementById('analyze-text-btn');
+  btn.disabled = true;
+  document.getElementById('loading-section').style.display = 'block';
+  document.getElementById('result-section').style.display = 'none';
+
+  let mi = 0;
+  const msgEl = document.getElementById('loading-msg');
+  const iv = setInterval(() => { msgEl.textContent = LOADING_MSGS[mi++ % LOADING_MSGS.length]; }, 900);
+
+  const prompt = buildTextPrompt(review);
+
+  try {
+    const result = await callClaude([{ role: 'user', content: prompt }]);
+    clearInterval(iv);
+    renderResult(result, review, false);
+  } catch(e) {
+    clearInterval(iv);
+    document.getElementById('loading-section').style.display = 'none';
+    showError('text-error', 'Analysis failed: ' + (e.message || 'Unknown error'));
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function analyzeImage() {
+  hideErrors();
+  if (!selectedImageBase64) { showError('img-error', 'Please upload an image first.'); return; }
+  const btn = document.getElementById('analyze-img-btn');
+  btn.disabled = true;
+  document.getElementById('loading-section').style.display = 'block';
+  document.getElementById('result-section').style.display = 'none';
+
+  let mi = 0;
+  const msgEl = document.getElementById('loading-msg');
+  const iv = setInterval(() => { msgEl.textContent = LOADING_MSGS[mi++ % LOADING_MSGS.length]; }, 900);
+
+  const messages = [{
+    role: 'user',
+    content: [
+      { type: 'image', source: { type: 'base64', media_type: selectedImageType, data: selectedImageBase64 } },
+      { type: 'text', text: buildImagePrompt() }
+    ]
+  }];
+
+  try {
+    const result = await callClaude(messages);
+    clearInterval(iv);
+    renderResult(result, null, true);
+  } catch(e) {
+    clearInterval(iv);
+    document.getElementById('loading-section').style.display = 'none';
+    showError('img-error', 'Analysis failed: ' + (e.message || 'Unknown error'));
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function buildTextPrompt(review) {
+  return `You are an expert ML model trained to detect fake, astroturfed, or inauthentic product/service reviews.
+
+Analyze this review and return ONLY valid JSON (no markdown, no backticks, no preamble):
+{
+  "fake_probability": <integer 0-100>,
+  "verdict": "<Likely Fake|Possibly Fake|Mixed Signals|Likely Authentic|Clearly Genuine>",
+  "confidence": "<Low|Medium|High>",
+  "summary": "<2-3 sentence plain English explanation>",
+  "signals": [
+    {
+      "name": "<signal name, max 5 words>",
+      "status": "<red|amber|green>",
+      "description": "<one sentence>",
+      "label": "<Suspicious|Neutral|Authentic>"
+    }
+  ],
+  "suspicious_phrases": ["<phrase1>", "<phrase2>"]
+}
+
+Include 5-7 signals covering: excessive punctuation/caps, superlative language, vague specifics, emotional manipulation, personal details, product knowledge, writing style consistency, incentive hints, sentence variety.
+status red=fake indicator, green=authentic, amber=neutral.
+suspicious_phrases: 3-6 short phrases from the text that are most suspicious (exact substrings).
+
+Review:
+"""
+${review}
+"""`;
+}
+
+function buildImagePrompt() {
+  return `You are an expert at detecting fake, astroturfed, or manipulated reviews by analyzing screenshots.
+
+Look at this review screenshot carefully. Analyze:
+- The text content of reviews visible
+- Profile characteristics (generic names, no profile photo, new accounts)
+- Rating patterns (all 5-star or all 1-star bombs)
+- Verified purchase indicators
+- Review date patterns
+- Language authenticity
+- Visual signs of manipulation (edited overlays, suspicious formatting)
+
+Return ONLY valid JSON (no markdown, no backticks, no preamble):
+{
+  "fake_probability": <integer 0-100>,
+  "verdict": "<Likely Fake|Possibly Fake|Mixed Signals|Likely Authentic|Clearly Genuine>",
+  "confidence": "<Low|Medium|High>",
+  "summary": "<2-3 sentence explanation of what you see in the image>",
+  "signals": [
+    {
+      "name": "<signal name, max 5 words>",
+      "status": "<red|amber|green>",
+      "description": "<one sentence>",
+      "label": "<Suspicious|Neutral|Authentic>"
+    }
+  ],
+  "image_observations": ["<observation1>", "<observation2>", "<observation3>"],
+  "platform_detected": "<Amazon|Google|Yelp|TripAdvisor|App Store|Unknown|Other>"
+}
+
+Include 5-7 signals. image_observations: 3-5 specific visual things you noticed in the screenshot.`;
+}
+
+async function callClaude(messages) {
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 1000,
+      messages
+    })
+  });
+  if (!response.ok) throw new Error('API request failed: ' + response.status);
+  const data = await response.json();
+  const text = data.content.map(b => b.text || '').join('');
+  try {
+    return JSON.parse(text.replace(/```json|```/g, '').trim());
+  } catch(e) {
+    throw new Error('Could not parse AI response.');
+  }
+}
+
+function renderResult(result, review, isImage) {
+  document.getElementById('loading-section').style.display = 'none';
+  document.getElementById('result-section').style.display = 'block';
+
+  const prob = Math.min(100, Math.max(0, Math.round(result.fake_probability)));
+
+  // Arc ring
+  const circumference = 301.6;
+  const offset = circumference - (prob / 100) * circumference;
+  const arc = document.getElementById('score-arc');
+  arc.style.strokeDashoffset = offset;
+  const arcColor = prob >= 65 ? '#f06060' : prob >= 35 ? '#f0a040' : '#4ecb8a';
+  arc.style.stroke = arcColor;
+  document.getElementById('score-text').textContent = prob + '%';
+
+  // Verdict
+  const badge = document.getElementById('verdict-badge');
+  badge.textContent = result.verdict;
+  if (prob >= 65) {
+    badge.style.cssText = 'background:var(--red-bg);color:var(--red);';
+  } else if (prob >= 35) {
+    badge.style.cssText = 'background:var(--amber-bg);color:var(--amber);';
+  } else {
+    badge.style.cssText = 'background:var(--green-bg);color:var(--green);';
+  }
+
+  document.getElementById('confidence-label').textContent = (result.confidence || '') + ' confidence';
+  document.getElementById('verdict-summary').textContent = result.summary || '';
+
+  // Meters
+  const meters = document.getElementById('meter-bars');
+  const authScore = Math.round(100 - prob);
+  const deceptScore = prob;
+  const structScore = Math.round(Math.min(100, Math.max(10, 80 - prob * 0.35)));
+  meters.innerHTML = [
+    { label: 'Authenticity score', score: authScore, color: '#4ecb8a' },
+    { label: 'Deception indicators', score: deceptScore, color: '#f06060' },
+    { label: 'Writing quality', score: structScore, color: '#7c6ef5' }
+  ].map(m => `
+    <div>
+      <div class="meter-label"><span>${m.label}</span><span>${m.score}%</span></div>
+      <div class="meter-bar"><div class="meter-fill" style="width:${m.score}%;background:${m.color};"></div></div>
+    </div>
+  `).join('');
+
+  // Signals
+  const iconMap = { red: 'ti-alert-triangle', green: 'ti-check', amber: 'ti-minus' };
+  document.getElementById('signals-list').innerHTML = (result.signals || []).map(s => `
+    <div class="signal-row">
+      <div class="sig-icon sig-${s.status}">
+        <i class="ti ${iconMap[s.status] || 'ti-minus'}"></i>
+      </div>
+      <div style="flex:1;">
+        <div class="signal-name">${s.name}</div>
+        <div class="signal-desc">${s.description}</div>
+      </div>
+      <span class="sig-pill pill-${s.status}">${s.label}</span>
+    </div>
+  `).join('');
+
+  // Text highlight
+  if (!isImage && review) {
+    const hl = document.getElementById('highlight-section');
+    hl.style.display = 'block';
+    let highlighted = escHtml(review);
+    const phrases = result.suspicious_phrases || [];
+    phrases.forEach(ph => {
+      if (!ph) return;
+      const escaped = escHtml(ph);
+      highlighted = highlighted.split(escaped).join(`<span class="hl-suspicious">${escaped}</span>`);
+    });
+    document.getElementById('review-highlight-text').innerHTML = highlighted;
+    document.getElementById('img-analysis-extra').style.display = 'none';
+  } else {
+    document.getElementById('highlight-section').style.display = 'none';
+  }
+
+  // Image extra info
+  if (isImage) {
+    const extra = document.getElementById('img-analysis-extra');
+    extra.style.display = 'block';
+    const tags = [];
+    if (result.platform_detected && result.platform_detected !== 'Unknown') tags.push(result.platform_detected);
+    tags.push(result.confidence + ' confidence');
+    document.getElementById('img-tags').innerHTML = tags.map(t => `<span class="img-tag">${t}</span>`).join('');
+    const obs = result.image_observations || [];
+    document.getElementById('img-notes-text').textContent = obs.join(' • ') || result.summary;
+  }
+
+  document.getElementById('result-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function escHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+</script>
+</body>
+</html>
